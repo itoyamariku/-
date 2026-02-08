@@ -1,54 +1,122 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<title>QR検品アプリ</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>検品アプリ</title>
 <script src="https://unpkg.com/html5-qrcode"></script>
 <style>
-body { font-size: 22px; text-align: center; }
-.ok { color: green; }
+body { font-family: sans-serif; padding: 10px; }
+#reader { width: 100%; max-width: 400px; margin-top: 10px; }
+.done { color: green; font-weight: bold; }
 .ng { color: red; }
 </style>
 </head>
 <body>
 
-<h2>QR検品</h2>
-<div id="reader" style="width:320px;margin:auto;"></div>
-<div id="result"></div>
+<h2>検品開始</h2>
+
+出庫日：
+<input type="date" id="shippingDate"><br><br>
+
+積込担当者：
+<select id="staff">
+  <option value="">全員</option>
+  <option value="山田">山田</option>
+  <option value="佐藤">佐藤</option>
+</select><br><br>
+
+<button onclick="startCheck()">検品開始</button>
+
+<hr>
+
+<div id="status"></div>
+<div id="count"></div>
+<div id="reader"></div>
 
 <script>
-const MASTER = ["A12345","B67890"];
-const API_URL = "https://script.google.com/macros/s/AKfycbwyhWKJis7hw9v7r4FwOEvjBdikQSr9N2SZrtAeGhOucoX9BtSWJXplAC4RaPAMLSm8/exec";
-const USER = "作業者";
+// ===== 仮マスタデータ =====
+let masterData = [
+  {outNo:"01522", slipNo:"2", row:"087", date:"2026-02-06", staff:"山田", status:"未検品"},
+  {outNo:"01522", slipNo:"2", row:"088", date:"2026-02-06", staff:"山田", status:"未検品"},
+  {outNo:"01522", slipNo:"2", row:"089", date:"2026-02-06", staff:"佐藤", status:"未検品"}
+];
 
-const qr = new Html5Qrcode("reader");
-qr.start(
-  { facingMode: "environment" },
-  { fps: 10, qrbox: 250 },
-  (text) => {
-    let result = MASTER.includes(text) ? "OK" : "NG";
-    document.getElementById("result").innerHTML =
-      result === "OK"
-        ? `<div class="ok">✅ 検品OK<br>${text}</div>`
-        : `<div class="ng">❌ NG<br>${text}</div>`;
+let targetData = [];
+let locked = false;
+let qr;
 
-    navigator.vibrate(200);
+// ===== 検品開始 =====
+function startCheck() {
+  const date = document.getElementById("shippingDate").value;
+  const staff = document.getElementById("staff").value;
 
-    fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        code: text,
-        qty: 1,
-        result: result,
-        user: USER
-      })
-    });
+  targetData = masterData.filter(d =>
+    d.date === date &&
+    (staff === "" || d.staff === staff)
+  );
 
-    setTimeout(() => location.reload(), 1500);
+  if (targetData.length === 0) {
+    alert("対象データがありません");
+    return;
   }
-);
+
+  document.getElementById("status").innerText = "検品中";
+  updateCount();
+
+  qr = new Html5Qrcode("reader");
+  qr.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    onScan
+  );
+}
+
+// ===== QR解析 =====
+function parseQR(text) {
+  const items = text.split(",");
+  const [outNo, slipNo, row] = items[0].split(" ");
+  return { outNo, slipNo, row };
+}
+
+// ===== QR読み取り成功 =====
+function onScan(text) {
+  if (locked) return;
+
+  const qrData = parseQR(text);
+
+  const target = targetData.find(d =>
+    d.outNo === qrData.outNo &&
+    d.slipNo === qrData.slipNo &&
+    d.row === qrData.row &&
+    d.status === "未検品"
+  );
+
+  if (!target) {
+    document.getElementById("status").innerHTML =
+      "<span class='ng'>対象外 or 検品済</span>";
+    return;
+  }
+
+  target.status = "検品済";
+  document.getElementById("status").innerHTML =
+    "<span class='done'>OK</span>";
+
+  updateCount();
+}
+
+// ===== 残件管理 =====
+function updateCount() {
+  const remain = targetData.filter(d => d.status === "未検品").length;
+  document.getElementById("count").innerText = `残り ${remain} 件`;
+
+  if (remain === 0) {
+    locked = true;
+    qr.stop();
+    alert("検品完了");
+  }
+}
 </script>
 
 </body>
 </html>
+
