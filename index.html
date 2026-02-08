@@ -34,12 +34,20 @@ body { font-family: sans-serif; padding: 10px; }
 <div id="reader"></div>
 
 <script>
-// ===== 仮マスタデータ =====
-let masterData = [
-  {outNo:"01522", slipNo:"2", row:"087", date:"2026-02-06", staff:"山田", status:"未検品"},
-  {outNo:"01522", slipNo:"2", row:"088", date:"2026-02-06", staff:"山田", status:"未検品"},
-  {outNo:"01522", slipNo:"2", row:"089", date:"2026-02-06", staff:"佐藤", status:"未検品"}
-];
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwdEs68422Wp-EZ7uxrpAaJmtfZqZEjVEctPI_Ls2StrNww7vlCxhRY61h4Ce3p1vpi/exec";
+
+fetch(GAS_URL)
+  .then(res => res.json())
+  .then(data => {
+    masterData = data;
+    console.log("マスタ取得完了", masterData);
+  })
+  .catch(err => {
+    alert("マスタ取得に失敗しました");
+  });
+
+let masterData = [];
+
 
 let targetData = [];
 let locked = false;
@@ -98,6 +106,9 @@ function onScan(text) {
   }
 
   target.status = "検品済";
+
+fetch(`${GAS_URL}?outNo=${qrData.outNo}&slipNo=${qrData.slipNo}&row=${qrData.row}`);
+
   document.getElementById("status").innerHTML =
     "<span class='done'>OK</span>";
 
@@ -119,4 +130,6 @@ function updateCount() {
 
 </body>
 </html>
+
+
 
