@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>QR検品アプリ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/html5-qrcode"></script>
+<style>
+body { font-size: 22px; text-align: center; }
+.ok { color: green; }
+.ng { color: red; }
+</style>
+</head>
+<body>
+
+<h2>QR検品</h2>
+<div id="reader" style="width:320px;margin:auto;"></div>
+<div id="result"></div>
+
+<script>
+const MASTER = ["A12345","B67890"];
+const API_URL = "https://script.google.com/macros/s/AKfycbwyhWKJis7hw9v7r4FwOEvjBdikQSr9N2SZrtAeGhOucoX9BtSWJXplAC4RaPAMLSm8/exec";
+const USER = "作業者";
+
+const qr = new Html5Qrcode("reader");
+qr.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  (text) => {
+    let result = MASTER.includes(text) ? "OK" : "NG";
+    document.getElementById("result").innerHTML =
+      result === "OK"
+        ? `<div class="ok">✅ 検品OK<br>${text}</div>`
+        : `<div class="ng">❌ NG<br>${text}</div>`;
+
+    navigator.vibrate(200);
+
+    fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        code: text,
+        qty: 1,
+        result: result,
+        user: USER
+      })
+    });
+
+    setTimeout(() => location.reload(), 1500);
+  }
+);
+</script>
+
+</body>
+</html>
