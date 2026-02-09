@@ -34,7 +34,7 @@ body { font-family: sans-serif; padding: 10px; }
 <div id="reader"></div>
 
 <script>
-const GAS_URL = "https://script.google.com/macros/s/AKfycbz1S7ZKnZE71wqGcHtCSF-IbGs27AIH4mqqR0V40pIsvbTnKJEbmeldgAKiwBpOI8mC/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzeJipYaPEqnBzmdDdSbNSf2GGoqeJSRVe-2e9UQ4BFO_bhxlstS5a23aLs2KBgCao2/exec";
 
 fetch(GAS_URL)
   .then(res => res.json())
@@ -52,7 +52,13 @@ let masterData = [];
 let targetData = [];
 let locked = false;
 let qr;
-
+//文字列調整
+function normalize(str) {
+  return String(str)
+    .replace(/\s+/g, "")
+    .replace(/　/g, "")
+    .trim();
+}
 // ===== 検品開始 =====
 function startCheck() {
   const date = document.getElementById("shippingDate").value;
@@ -81,9 +87,15 @@ function startCheck() {
 
 // ===== QR解析 =====
 function parseQR(text) {
+  text = text.replace(/[\[\]\r\n]/g, "").trim();
   const items = text.split(",");
-  const [outNo, slipNo, row] = items[0].split(" ");
-  return { outNo, slipNo, row };
+  const [outNo, slipNo, row] = items[0].trim().split(/\s+/);
+
+  return {
+    outNo: outNo.padStart(5, "0"),
+    slipNo: slipNo.padStart(2, "0"),
+    row: row.padStart(3, "0")
+  };
 }
 
 // ===== QR読み取り成功 =====
@@ -92,11 +104,11 @@ function onScan(text) {
 
   const qrData = parseQR(text);
 
-  const target = targetData.find(d =>
-    d.outNo === qrData.outNo &&
-    d.slipNo === qrData.slipNo &&
-    d.row === qrData.row &&
-    d.status === "未検品"
+const target = targetData.find(d =>
+  normalize(d.outNo) === normalize(qrData.outNo) &&
+  normalize(d.slipNo) === normalize(qrData.slipNo) &&
+  normalize(d.row) === normalize(qrData.row) &&
+  d.status === "未検品"
   );
 
   if (!target) {
@@ -130,6 +142,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
