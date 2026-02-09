@@ -21,8 +21,9 @@ body { font-family: sans-serif; padding: 10px; }
 積込担当者：
 <select id="staff">
   <option value="">全員</option>
-  <option value="山田">山田</option>
-  <option value="佐藤">佐藤</option>
+  <option value="幸地">幸地</option>
+  <option value="小管">小管</option>
+  <option value="大城">大城</option>
 </select><br><br>
 
 <button onclick="startCheck()">検品開始</button>
@@ -80,7 +81,7 @@ function startCheck() {
   qr = new Html5Qrcode("reader");
   qr.start(
     { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
+{ fps: 3, qrbox: { width: 300, height: 300 } },
     onScan
   );
 }
@@ -155,9 +156,4 @@ function updateCount() {
 
 </body>
 </html>
-
-
-
-
-
 
