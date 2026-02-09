@@ -128,8 +128,8 @@ function parseQR(qrText) {
   const clean = qrText.trim();
   const parts = clean.split(",");
 
-  if (parts.length < 4 || parts[0] !== "SYU") {
-    return null;
+if (parts.length < 4 || normalize(parts[0]) !== "SYU") {
+  return null;
   }
 
   return {
@@ -141,6 +141,11 @@ function parseQR(qrText) {
 
 /* ===== QR読取 ===== */
 function onScan(text) {
+
+  console.log("RAW QR:", text);
+  document.getElementById("qrDataView").innerText =
+    "RAW: " + text;
+
   if (locked) return;
 
   if (text === lastScan) return;
