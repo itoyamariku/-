@@ -4,14 +4,32 @@
 <meta charset="UTF-8">
 <title>検品アプリ</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-body { font-family: sans-serif; padding: 10px; }
-#reader { width: 100%; max-width: 400px; margin-top: 10px; }
-.done { color: green; font-weight: bold; }
-.ng { color: red; font-weight: bold; }
-.box { background: #f5f5f5; padding: 8px; margin-top: 8px; }
+body {
+  font-family: sans-serif;
+  padding: 10px;
+}
+#reader {
+  width: 100%;
+  max-width: 400px;
+  margin-top: 10px;
+}
+.done {
+  color: green;
+  font-weight: bold;
+}
+.ng {
+  color: red;
+  font-weight: bold;
+}
+.box {
+  background: #f5f5f5;
+  padding: 8px;
+  margin-top: 8px;
+}
 </style>
 </head>
 
@@ -28,7 +46,164 @@ body { font-family: sans-serif; padding: 10px; }
   <option value="幸地">幸地</option>
   <option value="小管">小管</option>
   <option value="大城">大城</option>
-</select>
+</select><br><br>
+
+<button onclick="startCheck()">検品開始</button>
+
+<hr>
+
+<div id="status"></div>
+
+<div id="qrDataView" class="box"></div>
+
+<div id="count"></div>
+
+<div id="reader"></div>
+
+<script>
+/* ===== 設定 ===== */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzeJipYaPEqnBzmdDdSbNSf2GGoqeJSRVe-2e9UQ4BFO_bhxlstS5a23aLs2KBgCao2/exec";
+
+/* ===== 変数 ===== */
+let masterData = [];
+let targetData = [];
+let locked = false;
+let qr;
+let lastScan = "";
+
+/* ===== マスタ取得 ===== */
+fetch(GAS_URL)
+  .then(res => res.json())
+  .then(data => {
+    masterData = data;
+    console.log("マスタ取得完了", masterData);
+  })
+  .catch(() => alert("マスタ取得に失敗しました"));
+
+/* ===== 文字列正規化 ===== */
+function normalize(str) {
+  return String(str)
+    .replace(/\s+/g, "")
+    .replace(/　/g, "")
+    .trim();
+}
+
+/* ===== 検品開始 ===== */
+function startCheck() {
+  if (masterData.length === 0) {
+    alert("マスタ読込中です。少し待ってください");
+    return;
+  }
+
+  const date = document.getElementById("shippingDate").value;
+  const staff = document.getElementById("staff").value;
+
+  targetData = masterData.filter(d =>
+    d.date === date &&
+    (staff === "" || d.staff === staff)
+  );
+
+  if (targetData.length === 0) {
+    alert("対象データがありません");
+    return;
+  }
+
+  targetData.forEach(d => {
+    if (!d.status) d.status = "未検品";
+  });
+
+  document.getElementById("status").innerText = "検品中";
+  updateCount();
+
+  qr = new Html5Qrcode("reader");
+  qr.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 300, height: 300 }, disableFlip: true },
+    onScan
+  );
+}
+
+/* ===== QR解析 ===== */
+function parseQR(qrText) {
+  const clean = qrText.trim();
+  const parts = clean.split(",");
+
+if (parts.length < 4 || normalize(parts[0]) !== "SYU") {
+  return null;
+  }
+
+  return {
+    outNo: parts[1].split(" ").join(""), // 出庫No
+    slipNo: parts[2].trim(),             // 伝票番号
+    row: parts[3].trim()                 // 行数
+  };
+}
+
+/* ===== QR読取 ===== */
+function onScan(text) {
+
+  console.log("RAW QR:", text);
+  document.getElementById("qrDataView").innerText =
+    "RAW: " + text;
+
+  if (locked) return;
+
+  if (text === lastScan) return;
+  lastScan = text;
+  setTimeout(() => lastScan = "", 1500);
+
+  const qrData = parseQR(text);
+  if (!qrData) {
+    document.getElementById("status").innerHTML =
+      "<span class='ng'>QR形式エラー</span>";
+    return;
+  }
+
+  // 読み取ったQR内容を表示
+  document.getElementById("qrDataView").innerHTML =
+    `出庫No：${qrData.outNo}<br>
+     伝票番号：${qrData.slipNo}<br>
+     行数：${qrData.row}`;
+
+  const target = targetData.find(d =>
+    normalize(d.outNo) === normalize(qrData.outNo) &&
+    normalize(d.slipNo) === normalize(qrData.slipNo) &&
+    normalize(d.row) === normalize(qrData.row) &&
+    d.status === "未検品"
+  );
+
+  if (!target) {
+    document.getElementById("status").innerHTML =
+      "<span class='ng'>対象外 または 検品済</span>";
+    return;
+  }
+
+  target.status = "検品済";
+
+  // GASへ反映
+  fetch(`${GAS_URL}?outNo=${qrData.outNo}&slipNo=${qrData.slipNo}&row=${qrData.row}`);
+
+  document.getElementById("status").innerHTML =
+    "<span class='done'>OK</span>";
+
+  updateCount();
+}
+
+/* ===== 残件管理 ===== */
+function updateCount() {
+  const remain = targetData.filter(d => d.status === "未検品").length;
+  document.getElementById("count").innerText = `残り ${remain} 件`;
+
+  if (remain === 0) {
+    locked = true;
+    qr.stop();
+    alert("検品完了");
+  }
+}
+</script>
+
+</body>
+</html>
 
 
 
