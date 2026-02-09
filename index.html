@@ -54,7 +54,7 @@ body {
 
 <div id="status"></div>
 
-<div id="qrDataView" class="box"></div>
+<div id="qrDataView" style="margin-top:10px;"></div>
 
 <div id="count"></div>
 
@@ -121,6 +121,7 @@ function startCheck() {
     { fps: 10, qrbox: { width: 300, height: 300 }, disableFlip: true },
     onScan
   );
+renderRemainList();
 }
 
 /* ===== QR解析 ===== */
@@ -142,6 +143,8 @@ if (parts.length < 4 || normalize(parts[0]) !== "SYU") {
 /* ===== QR読取 ===== */
 function onScan(text) {
 
+target.status = "検品済";
+renderRemainList();
   if (locked) return;
 
   const qrData = parseQR(text);
@@ -165,6 +168,29 @@ function onScan(text) {
       "<span class='ng'>対象外 or 検品済</span>";
     return;
   }
+//===未検品明細表示===
+function renderRemainList() {
+  const remain = targetData.filter(d => d.status === "未検品");
+
+  if (remain.length === 0) {
+    document.getElementById("qrDataView").innerHTML =
+      "<b>未読み取りはありません</b>";
+    return;
+  }
+
+  let html = "<b>未読み取り一覧</b><br>";
+
+  remain.forEach(d => {
+    html += `
+      出庫No：${d.outNo}
+      ／ 伝票：${d.slipNo}
+      ／ 行：${d.row}<br>
+    `;
+  });
+
+  document.getElementById("qrDataView").innerHTML = html;
+}
+
 
   // ===== ここでローカル側を更新 =====
   target.status = "検品済";
@@ -211,6 +237,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
