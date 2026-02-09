@@ -44,7 +44,7 @@ body { font-family: sans-serif; padding: 10px; }
 
 <script>
 /* ===== 設定 ===== */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzecC0Au8guoXDddx6vPFZgb-YDluDe9dog4mlvHDx4OGESt6fMLhcPcS40ySmQurr_/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwt8gb4cSvfhakkyLHZjk-vlthg21HRg1le7Quq2t4cqR2FwI8T50H_--NR1QqdrIBx/exec";
 
 /* ===== 変数 ===== */
 let masterData = [];
@@ -149,7 +149,10 @@ function renderRemainList() {
 
   let html = "<b>未読み取り一覧</b><br>";
   remain.forEach(d => {
-    html += `出庫No:${d.outNo} / 伝票:${d.slipNo} / 行:${d.row}<br>`;
+    html += `
+      【${d.destination}】<br>
+      出庫No:${d.outNo} / 伝票:${d.slipNo} / 行:${d.row}<br><br>
+    `;
   });
 
   document.getElementById("qrDataView").innerHTML = html;
@@ -170,6 +173,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
