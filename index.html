@@ -1,138 +1,167 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>QR検品アプリ（テスト版）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- html5-qrcode -->
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 10px;
-    }
-    #reader {
-      width: 100%;
-      max-width: 400px;
-      margin-bottom: 10px;
-    }
-    .ok {
-      color: green;
-      font-weight: bold;
-    }
-    .ng {
-      color: red;
-      font-weight: bold;
-    }
-    pre {
-      background: #f5f5f5;
-      padding: 5px;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>検品アプリ</title>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<style>
+body { font-family: sans-serif; padding: 10px; }
+#reader { width: 100%; max-width: 400px; margin-top: 10px; }
+.done { color: green; font-weight: bold; }
+.ng { color: red; }
+</style>
 </head>
-
 <body>
-  <h2>QR検品アプリ（動作確認用）</h2>
 
-  <div id="reader"></div>
+<h2>検品開始</h2>
 
-  <div>
-    <strong>QR読み取り結果（生データ）：</strong>
-    <pre id="qrRaw">未読</pre>
-  </div>
+出庫日：
+<input type="date" id="shippingDate"><br><br>
 
-  <div>
-    <strong>解析結果：</strong>
-    <pre id="qrParsed">---</pre>
-  </div>
+積込担当者：
+<select id="staff">
+  <option value="">全員</option>
+  <option value="幸地">幸地</option>
+  <option value="小管">小管</option>
+  <option value="大城">大城</option>
+</select><br><br>
 
-  <div id="result"></div>
+<button onclick="startCheck()">検品開始</button>
+
+<hr>
+
+<div id="status"></div>
+<div id="qrDataView" style="margin-top:10px;"></div>
+<div id="count"></div>
+<div id="reader"></div>
 
 <script>
-/* ===== 仮マスタデータ（後でGoogleスプレッドシートに置換） ===== */
-const masterData = [
-  {
-    syukkoNo: "015222087",
-    denpyoNo: "01",
-    gyo: "01"
-  }
-];
 
-/* ===== QR解析ロジック ===== */
+function showQrData(qrData) {
+  document.getElementById("qrDataView").innerHTML = `
+    <b>QR解析結果</b><br>
+    出庫No：${qrData.outNo}<br>
+    伝票番号：${qrData.slipNo}<br>
+    行数：${qrData.row}
+  `;
+}
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzeJipYaPEqnBzmdDdSbNSf2GGoqeJSRVe-2e9UQ4BFO_bhxlstS5a23aLs2KBgCao2/exec";
+
+fetch(GAS_URL)
+  .then(res => res.json())
+  .then(data => {
+    masterData = data;
+    console.log("マスタ取得完了", masterData);
+  })
+  .catch(err => {
+    alert("マスタ取得に失敗しました");
+  });
+
+let masterData = [];
+
+
+let targetData = [];
+let locked = false;
+let qr;
+//文字列調整
+function normalize(str) {
+  return String(str)
+    .replace(/\s+/g, "")
+    .replace(/　/g, "")
+    .trim();
+}
+// ===== 検品開始 =====
+function startCheck() {
+  const date = document.getElementById("shippingDate").value;
+  const staff = document.getElementById("staff").value;
+
+  targetData = masterData.filter(d =>
+    d.date === date &&
+    (staff === "" || d.staff === staff)
+  );
+
+  if (targetData.length === 0) {
+    alert("対象データがありません");
+    return;
+  }
+
+  document.getElementById("status").innerText = "検品中";
+  updateCount();
+
+  qr = new Html5Qrcode("reader");
+  qr.start(
+    { facingMode: "environment" },
+{ fps: 10, qrbox: { width: 300, height: 300 } },
+    onScan
+  );
+}
+
+// ===== QR解析 =====
 function parseQR(qrText) {
-  const clean = qrText.trim();          // 改行・空白除去
+  const clean = qrText.trim();
   const parts = clean.split(",");
 
-  if (parts.length < 3) {
+  // 最低限の形式チェック
+  if (parts.length < 4 || parts[0] !== "SYU") {
     return null;
   }
 
   // "01522 2 087" → "015222087"
-  const syukkoNo = parts[0].split(" ").join("");
+  const syukkoNo = parts[1].split(" ").join("");
 
   return {
     syukkoNo: syukkoNo,
-    denpyoNo: parts[1].trim(),
-    gyo: parts[2].trim()
+    denpyoNo: parts[2].trim(),
+    gyo: parts[3].trim()
   };
 }
 
-/* ===== QR読み取り成功時 ===== */
-function onScanSuccess(decodedText) {
-  // 生データ表示
-  document.getElementById("qrRaw").innerText = decodedText;
+// ===== QR読み取り成功 =====
+function onScan(text) {
 
-  const parsed = parseQR(decodedText);
+  if (locked) return;
 
-  if (!parsed) {
-    document.getElementById("qrParsed").innerText = "解析失敗";
+  const qrData = parseQR(text);
+
+showQrData(qrData);  
+
+const target = targetData.find(d =>
+  normalize(d.outNo) === normalize(qrData.outNo) &&
+  normalize(d.slipNo) === normalize(qrData.slipNo) &&
+  normalize(d.row) === normalize(qrData.row) &&
+  d.status === "未検品"
+  );
+
+  if (!target) {
+    document.getElementById("status").innerHTML =
+      "<span class='ng'>対象外 or 検品済</span>";
     return;
   }
 
-  // 解析結果表示
-  document.getElementById("qrParsed").innerText =
-    `出庫No.: ${parsed.syukkoNo}\n伝票番号: ${parsed.denpyoNo}\n行数: ${parsed.gyo}`;
+  target.status = "検品済";
 
-  // マスタ照合
-  const hit = masterData.some(m =>
-    m.syukkoNo === parsed.syukkoNo &&
-    m.denpyoNo === parsed.denpyoNo &&
-    m.gyo === parsed.gyo
-  );
+fetch(`${GAS_URL}?outNo=${qrData.outNo}&slipNo=${qrData.slipNo}&row=${qrData.row}`);
 
-  if (hit) {
-    document.getElementById("result").innerHTML =
-      `<p class="ok">✔ 検品OK</p>`;
-  } else {
-    document.getElementById("result").innerHTML =
-      `<p class="ng">✖ 検品対象外</p>`;
-  }
+  document.getElementById("status").innerHTML =
+    "<span class='done'>OK</span>";
+
+  updateCount();
 }
 
-/* ===== カメラ起動 ===== */
-const html5QrCode = new Html5Qrcode("reader");
+// ===== 残件管理 =====
+function updateCount() {
+  const remain = targetData.filter(d => d.status === "未検品").length;
+  document.getElementById("count").innerText = `残り ${remain} 件`;
 
-html5QrCode.start(
-  { facingMode: "environment" },
-  {
-    fps: 10,
-    qrbox: { width: 250, height: 250 },
-    disableFlip: true
-  },
-  onScanSuccess,
-  errorMessage => {
-    // 読み取りエラーは無視（ログがうるさいため）
+  if (remain === 0) {
+    locked = true;
+    qr.stop();
+    alert("検品完了");
   }
-);
+}
 </script>
 
 </body>
 </html>
-
-
 
 
