@@ -37,14 +37,7 @@ body { font-family: sans-serif; padding: 10px; }
 
 <script>
 
-function showQrData(qrData) {
-  document.getElementById("qrDataView").innerHTML = `
-    <b>QR解析結果</b><br>
-    出庫No：${qrData.outNo}<br>
-    伝票番号：${qrData.slipNo}<br>
-    行数：${qrData.row}
-  `;
-}
+
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzeJipYaPEqnBzmdDdSbNSf2GGoqeJSRVe-2e9UQ4BFO_bhxlstS5a23aLs2KBgCao2/exec";
 
 fetch(GAS_URL)
@@ -123,7 +116,6 @@ function onScan(text) {
 
   const qrData = parseQR(text);
 
-showQrData(qrData);  
 
 const target = targetData.find(d =>
   normalize(d.outNo) === normalize(qrData.outNo) &&
@@ -163,5 +155,6 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
