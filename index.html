@@ -102,11 +102,11 @@ function parseQR(qrText) {
   // "01522 2 087" → "015222087"
   const syukkoNo = parts[1].split(" ").join("");
 
-  return {
-    syukkoNo: syukkoNo,
-    denpyoNo: parts[2].trim(),
-    gyo: parts[3].trim()
-  };
+return {
+  outNo: syukkoNo,
+  slipNo: parts[2].trim(),
+  row: parts[3].trim()
+};
 }
 
 // ===== QR読み取り成功 =====
@@ -114,7 +114,12 @@ function onScan(text) {
 
   if (locked) return;
 
-  const qrData = parseQR(text);
+const qrData = parseQR(text);
+if (!qrData) {
+  document.getElementById("status").innerHTML =
+    "<span class='ng'>QR形式エラー</span>";
+  return;
+}
 
 
 const target = targetData.find(d =>
@@ -155,6 +160,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
