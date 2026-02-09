@@ -87,14 +87,27 @@ function startCheck() {
 
 // ===== QR解析 =====
 function parseQR(text) {
-  text = text.replace(/[\[\]\r\n]/g, "").trim();
-  const items = text.split(",");
-  const [outNo, slipNo, row] = items[0].trim().split(/\s+/);
+  // ① 前処理
+  text = String(text)
+    .replace(/[\[\]\r\n]/g, "")
+    .trim();
 
+  // ② カンマで分割
+  const items = text.split(",");
+
+  // ③ 出庫No.（空白区切りを連結）
+  const outParts = items[0].trim().split(/\s+/);
+  const outNo = outParts.join("");
+
+  // ④ 伝票番号・行数
+  const slipNo = items[1].trim();
+  const row    = items[2].trim();
+
+  // ⑤ フォーマット統一（念のため）
   return {
-    outNo: outNo.padStart(5, "0"),
-    slipNo: slipNo.padStart(2, "0"),
-    row: row.padStart(3, "0")
+    outNo:  outNo,                 // 015222087
+    slipNo: slipNo.padStart(2, "0"),// 01
+    row:    row.padStart(2, "0")    // 01
   };
 }
 
@@ -142,6 +155,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
