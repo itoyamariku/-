@@ -114,6 +114,8 @@ function parseQR(text) {
 
 // ===== QR読み取り成功 =====
 function onScan(text) {
+console.log("QR", qrData);
+console.log("MASTER", targetData);
   if (locked) return;
 
   const qrData = parseQR(text);
@@ -156,4 +158,3 @@ function updateCount() {
 
 </body>
 </html>
-
