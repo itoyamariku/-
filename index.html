@@ -169,29 +169,7 @@ function onScan(text) {
   // ===== ここでローカル側を更新 =====
   target.status = "検品済";
 
-  // ===== ★ここに入れる（GASへPOST）=====
-  fetch(GAS_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      outNo: qrData.outNo,
-      slipNo: qrData.slipNo,
-      row: qrData.row
-    })
-  })
-  .then(res => res.json())
-  .then(result => {
-    console.log("GAS結果", result);
-  })
-  .catch(err => {
-    alert("GAS更新失敗");
-    console.error(err);
-  });
 
-  document.getElementById("status").innerHTML =
-    "<span class='done'>OK</span>";
 
   updateCount();
 }
@@ -211,6 +189,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
