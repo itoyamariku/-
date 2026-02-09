@@ -142,28 +142,16 @@ if (parts.length < 4 || normalize(parts[0]) !== "SYU") {
 /* ===== QR読取 ===== */
 function onScan(text) {
 
-  console.log("RAW QR:", text);
-  document.getElementById("qrDataView").innerText =
-    "RAW: " + text;
-
   if (locked) return;
 
-  if (text === lastScan) return;
-  lastScan = text;
-  setTimeout(() => lastScan = "", 1500);
-
   const qrData = parseQR(text);
-  if (!qrData) {
-    document.getElementById("status").innerHTML =
-      "<span class='ng'>QR形式エラー</span>";
-    return;
-  }
 
-  // 読み取ったQR内容を表示
-  document.getElementById("qrDataView").innerHTML =
-    `出庫No：${qrData.outNo}<br>
-     伝票番号：${qrData.slipNo}<br>
-     行数：${qrData.row}`;
+  // デバッグ表示（すでにOKになっている想定）
+  document.getElementById("qrDataView").innerHTML = `
+    出庫No：${qrData.outNo}<br>
+    伝票番号：${qrData.slipNo}<br>
+    行数：${qrData.row}
+  `;
 
   const target = targetData.find(d =>
     normalize(d.outNo) === normalize(qrData.outNo) &&
@@ -174,14 +162,33 @@ function onScan(text) {
 
   if (!target) {
     document.getElementById("status").innerHTML =
-      "<span class='ng'>対象外 または 検品済</span>";
+      "<span class='ng'>対象外 or 検品済</span>";
     return;
   }
 
+  // ===== ここでローカル側を更新 =====
   target.status = "検品済";
 
-  // GASへ反映
-  fetch(`${GAS_URL}?outNo=${qrData.outNo}&slipNo=${qrData.slipNo}&row=${qrData.row}`);
+  // ===== ★ここに入れる（GASへPOST）=====
+  fetch(GAS_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      outNo: qrData.outNo,
+      slipNo: qrData.slipNo,
+      row: qrData.row
+    })
+  })
+  .then(res => res.json())
+  .then(result => {
+    console.log("GAS結果", result);
+  })
+  .catch(err => {
+    alert("GAS更新失敗");
+    console.error(err);
+  });
 
   document.getElementById("status").innerHTML =
     "<span class='done'>OK</span>";
@@ -204,6 +211,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
