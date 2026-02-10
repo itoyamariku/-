@@ -63,24 +63,7 @@ fetch(GAS_URL)
 function normalize(str) {
   return String(str).replace(/\s+/g, "").trim();
 }
-/* ===== 音 ===== */
-  function beep() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
 
-  osc.frequency.value = 1000; // ピッ
-  gain.gain.value = 0.1;
-
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-
-  osc.start();
-  setTimeout(() => {
-    osc.stop();
-    ctx.close();
-  }, 120);
-}
 /* ===== 検品開始 ===== */
 function startCheck() {
   const date = document.getElementById("shippingDate").value;
@@ -107,7 +90,7 @@ qr.start(
   { facingMode: "environment" },
   {
     fps: 15,
-    qrbox: { width: 100, height: 100 },
+    qrbox: { width: 50, height: 50 },
     aspectRatio: 1.0,
     disableFlip: true
   },
@@ -152,7 +135,7 @@ function onScan(text) {
   }
 
   target.status = "検品済";
-beep();
+
 
   document.getElementById("status").innerHTML =
     "<span class='done'>OK</span>";
@@ -197,6 +180,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
