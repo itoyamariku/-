@@ -18,6 +18,7 @@ body { font-family: sans-serif; padding: 10px; }
 <body>
 
 <h2>検品アプリ</h2>
+<audio id="beep" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
 
 出庫日：
 <input type="date" id="shippingDate"><br><br>
@@ -134,6 +135,7 @@ function onScan(text) {
   }
 
   target.status = "検品済";
+  document.getElementById("beep").play().catch(() => {});
 
   document.getElementById("status").innerHTML =
     "<span class='done'>OK</span>";
@@ -178,6 +180,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
