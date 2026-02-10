@@ -5,6 +5,14 @@
 <title>検品アプリ</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://unpkg.com/html5-qrcode"></script>
+<link rel="manifest" href="manifest.json">
+
+<meta name="theme-color" content="#00c853">
+
+<!-- iPhone用 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="検品">
 
 <style>
 body { font-family: sans-serif; padding: 10px; }
@@ -34,7 +42,9 @@ body { font-family: sans-serif; padding: 10px; }
     <option value="大城2">大城2</option>
 </select><br><br>
 
-<button onclick="startCheck()">検品開始</button>
+<button onclick="enterFullscreen(); startCheck();">
+  検品開始
+</button>
 
 <hr>
 
@@ -63,7 +73,13 @@ fetch(GAS_URL)
 function normalize(str) {
   return String(str).replace(/\s+/g, "").trim();
 }
-
+/*PWA*/
+function enterFullscreen() {
+  const el = document.documentElement;
+  if (el.requestFullscreen) {
+    el.requestFullscreen();
+  }
+}
 /* ===== 検品開始 ===== */
 function startCheck() {
   const date = document.getElementById("shippingDate").value;
@@ -180,6 +196,9 @@ function updateCount() {
 
 </body>
 </html>
+
+
+
 
 
 
