@@ -85,10 +85,16 @@ function startCheck() {
   renderRemainList();
 
   qr = new Html5Qrcode("reader");
-  qr.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: { width: 300, height: 300 }, disableFlip: true },
-    onScan
+qr.start(
+  { facingMode: "environment" },
+  {
+    fps: 15,
+    qrbox: { width: 220, height: 220 }, // ★小さく
+    aspectRatio: 1.0,
+    disableFlip: true
+  },    experimentalFeatures: {
+      useBarCodeDetectorIfSupported: true
+} , onScan
   );
 }
 
@@ -173,6 +179,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
