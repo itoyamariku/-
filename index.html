@@ -89,13 +89,15 @@ qr.start(
   { facingMode: "environment" },
   {
     fps: 15,
-    qrbox: { width: 220, height: 220 }, // ★小さく
+    qrbox: { width: 220, height: 220 },
     aspectRatio: 1.0,
-    disableFlip: true
-  },    experimentalFeatures: {
+    disableFlip: true,
+    experimentalFeatures: {
       useBarCodeDetectorIfSupported: true
-} , onScan
-  );
+    }
+  },
+  onScan
+);
 }
 
 /* ===== QR解析 ===== */
@@ -179,6 +181,7 @@ function updateCount() {
 
 </body>
 </html>
+
 
 
 
